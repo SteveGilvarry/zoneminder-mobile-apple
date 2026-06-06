@@ -215,45 +215,78 @@ struct LoginView: View {
 
 struct ConsoleView: View {
     @Environment(OperatorModel.self) private var model
+    private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
 
     var body: some View {
         NavigationStack {
             ZStack {
                 VoidBackground()
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 16) {
-                        SectionHeader(title: "Monitors", trailing: "\(model.monitors.count)")
-                        if model.monitors.isEmpty {
-                            EmptyState(icon: "video.slash", text: model.loading ? "Loading monitors…" : "No monitors")
-                        } else {
+                    if model.monitors.isEmpty {
+                        EmptyState(icon: "video.slash", text: model.loading ? "Loading monitors…" : "No monitors")
+                            .padding(.top, 60)
+                    } else {
+                        LazyVGrid(columns: columns, spacing: 12) {
                             ForEach(model.monitors) { monitor in
-                                NavigationLink { MonitorDetailView(monitor: monitor) } label: {
-                                    MonitorCard(monitor: monitor)
+                                NavigationLink(value: monitor) {
+                                    MonitorTile(monitor: monitor)
                                 }
                                 .buttonStyle(.plain)
                             }
                         }
-
-                        if !model.events.isEmpty {
-                            SectionHeader(title: "Recent events", trailing: "\(model.events.count)")
-                                .padding(.top, 6)
-                            ForEach(model.events.prefix(4)) { event in
-                                NavigationLink { EventDetailView(event: event) } label: {
-                                    EventCard(event: event)
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
+                        .padding(16)
                     }
-                    .padding(16)
                 }
                 .refreshable { try? await model.refresh() }
             }
-            .navigationTitle("Console")
+            .navigationDestination(for: Monitor.self) { MonitorDetailView(monitor: $0) }
+            .navigationTitle("Monitors")
             .toolbar { ConnectionToolbar() }
             .toolbarBackground(ZM.voidHi, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
         }
+    }
+}
+
+/// Compact wall tile: a live snapshot with name + status overlays. Tap → full live view.
+struct MonitorTile: View {
+    @Environment(OperatorModel.self) private var model
+    let monitor: Monitor
+
+    var body: some View {
+        ZStack(alignment: .bottomLeading) {
+            SnapshotImage(url: model.snapshotURL(monitor), rotation: monitor.rotationDegrees)
+                .mediaAspect(rotation: monitor.rotationDegrees)
+                .clipped()
+            LinearGradient(colors: [.clear, ZM.void.opacity(0.9)], startPoint: .center, endPoint: .bottom)
+
+            // top row: LIVE + PTZ
+            HStack {
+                if monitor.isCapturing {
+                    HStack(spacing: 4) {
+                        StatusDot(color: ZM.cyan, pulsing: true)
+                        Text("LIVE").font(.system(size: 9, weight: .bold, design: .monospaced)).foregroundStyle(.white)
+                    }
+                    .padding(.horizontal, 6).padding(.vertical, 3)
+                    .background(.black.opacity(0.45), in: Capsule())
+                }
+                Spacer()
+                if monitor.hasPTZ { Chip(text: "PTZ", color: ZM.cyan) }
+            }
+            .padding(8)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+
+            // bottom: name + record dot
+            HStack(spacing: 6) {
+                Circle().fill(MonitorState.recordColor(monitor.recording)).frame(width: 7, height: 7)
+                Text(monitor.name).font(.system(size: 12, weight: .semibold)).foregroundStyle(.white)
+                    .lineLimit(1).shadow(radius: 3)
+            }
+            .padding(10)
+        }
+        .background(ZM.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(ZM.hairline, lineWidth: 1))
     }
 }
 
@@ -311,8 +344,7 @@ struct MonitorDetailView: View {
             VoidBackground()
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    LivePlayerView(api: model.api, coordinator: model.coordinator, monitorID: monitor.id)
-                        .mediaAspect()
+                    LivePlayerView(api: model.api, coordinator: model.coordinator, monitorID: monitor.id, rotationDegrees: monitor.rotationDegrees)
                         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                         .overlay(RoundedRectangle(cornerRadius: 16).stroke(ZM.hairline, lineWidth: 1))
 
@@ -411,8 +443,7 @@ struct EventDetailView: View {
             VoidBackground()
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    EventPlayerView(api: model.api, eventID: event.id)
-                        .mediaAspect()
+                    EventPlayerView(api: model.api, eventID: event.id, rotationDegrees: model.monitors.first { $0.id == event.monitorId }?.rotationDegrees ?? 0)
                         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                         .overlay(RoundedRectangle(cornerRadius: 16).stroke(ZM.hairline, lineWidth: 1))
 
@@ -520,13 +551,14 @@ struct EmptyState: View {
 struct SnapshotImage: View {
     let url: URL?
     var icon: String = "video"
+    var rotation: Double = 0
     var body: some View {
         ZStack {
             ZM.voidHi
             if let url {
                 AsyncImage(url: url) { phase in
                     switch phase {
-                    case .success(let img): img.resizable().scaledToFill()
+                    case .success(let img): img.resizable().scaledToFill().cameraRotation(rotation)
                     case .empty: ProgressView().controlSize(.small).tint(ZM.faint)
                     default: Image(systemName: icon).foregroundStyle(ZM.faint)
                     }

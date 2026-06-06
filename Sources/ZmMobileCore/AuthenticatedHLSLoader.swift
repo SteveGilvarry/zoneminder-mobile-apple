@@ -63,14 +63,12 @@ public final class AuthenticatedHLSLoader: NSObject, AVAssetResourceLoaderDelega
                         }
                     }
                     lr.finishLoading()
-                    hlsLog.debug("playlist \(realURL.path, privacy: .public) bytes=\(body.count)")
                 } else {
                     // Media: redirect to the real URL with the token in the query string.
                     let redirectURL = zmAppendToken(realURL, token: token)
                     lr.redirect = URLRequest(url: redirectURL)
                     lr.response = HTTPURLResponse(url: redirectURL, statusCode: 302, httpVersion: nil, headerFields: nil)
                     lr.finishLoading()
-                    hlsLog.debug("redirect \(realURL.path, privacy: .public)")
                 }
             } catch {
                 hlsLog.error("FAILED \(realURL.path, privacy: .public): \(error.localizedDescription, privacy: .public)")

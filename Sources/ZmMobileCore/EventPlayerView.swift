@@ -47,21 +47,31 @@ public final class EventPlayerModel: ObservableObject {
 /// Drop-in SwiftUI view that plays one event's recorded video. Works on iOS and tvOS.
 public struct EventPlayerView: View {
     @StateObject private var model: EventPlayerModel
+    private let rotationDegrees: Double
 
-    public init(api: ZmApiClient, eventID: Int) {
+    public init(api: ZmApiClient, eventID: Int, rotationDegrees: Double = 0) {
+        self.rotationDegrees = rotationDegrees
         _model = StateObject(wrappedValue: EventPlayerModel(api: api, eventID: eventID))
     }
 
+    private var quarterTurned: Bool { rotationDegrees.truncatingRemainder(dividingBy: 180) != 0 }
+
     public var body: some View {
-        // Color.clear + aspectRatio reliably establishes a full-width 16:9 box; the player fills it
-        // via overlay. Applying .aspectRatio directly to VideoPlayer collapses it to a thin strip.
+        // Box aspect follows the camera rotation (portrait for 90/270) so rotated footage keeps
+        // correct proportions; Color.clear sizes the box and the player fills it via overlay.
         Color.clear
-            .aspectRatio(16.0 / 9.0, contentMode: .fit)
+            .aspectRatio(quarterTurned ? 9.0 / 16.0 : 16.0 / 9.0, contentMode: .fit)
             .overlay {
                 ZStack {
                     Color.black
                     if let player = model.player {
-                        VideoPlayer(player: player)
+                        GeometryReader { geo in
+                            VideoPlayer(player: player)
+                                .frame(width: quarterTurned ? geo.size.height : geo.size.width,
+                                       height: quarterTurned ? geo.size.width : geo.size.height)
+                                .rotationEffect(.degrees(rotationDegrees))
+                                .frame(width: geo.size.width, height: geo.size.height)
+                        }
                     } else if let error = model.error {
                         VStack(spacing: 8) {
                             Image(systemName: "exclamationmark.triangle")

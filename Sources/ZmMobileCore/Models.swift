@@ -62,6 +62,11 @@ public struct Monitor: Codable, Identifiable, Equatable, Hashable, Sendable {
     public var isCapturing: Bool { capturing != "None" }
     public var hasPTZ: Bool { controllable == 1 }
     public var isEnabled: Bool { (enabled ?? 1) == 1 }
+
+    /// Display rotation in degrees from the monitor's `orientation` (e.g. "ROTATE_90" -> 90).
+    public var rotationDegrees: Double {
+        Double(orientation.filter(\.isNumber)) ?? 0
+    }
 }
 
 public struct Event: Codable, Identifiable, Equatable, Sendable {

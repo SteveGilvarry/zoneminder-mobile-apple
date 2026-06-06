@@ -123,10 +123,33 @@ enum MonitorState {
     }
 }
 
+/// Display aspect ratio accounting for camera rotation: portrait for 90/270, else 16:9.
+func zmMediaAspect(_ degrees: Double) -> CGFloat {
+    degrees.truncatingRemainder(dividingBy: 180) != 0 ? 9.0 / 16.0 : 16.0 / 9.0
+}
+
 extension View {
-    /// Reliable full-width 16:9 media box (VideoPlayer/AsyncImage size poorly on their own).
-    func mediaAspect() -> some View {
-        self.aspectRatio(16.0/9.0, contentMode: .fit)
+    /// Full-width media box whose aspect follows the camera rotation (portrait for 90/270).
+    func mediaAspect(rotation: Double = 0) -> some View {
+        self.aspectRatio(zmMediaAspect(rotation), contentMode: .fit)
             .frame(maxWidth: .infinity)
+    }
+
+    /// Rotate media (a snapshot/thumbnail) by a monitor's orientation, sizing so a 90/270 image
+    /// fits the box with correct aspect.
+    @ViewBuilder
+    func cameraRotation(_ degrees: Double) -> some View {
+        if degrees == 0 {
+            self
+        } else {
+            GeometryReader { geo in
+                let quarter = degrees.truncatingRemainder(dividingBy: 180) != 0
+                self
+                    .frame(width: quarter ? geo.size.height : geo.size.width,
+                           height: quarter ? geo.size.width : geo.size.height)
+                    .rotationEffect(.degrees(degrees))
+                    .frame(width: geo.size.width, height: geo.size.height)
+            }
+        }
     }
 }

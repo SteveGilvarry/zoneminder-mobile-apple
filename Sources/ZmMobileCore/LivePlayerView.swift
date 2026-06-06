@@ -42,7 +42,6 @@ public final class LivePlayerModel: ObservableObject {
             self.loader = loader
 
             let assetURL = loader.assetURL(for: realMaster)
-            liveLog.debug("start monitor \(self.monitorID) real=\(realMaster.absoluteString, privacy: .public) asset=\(assetURL.absoluteString, privacy: .public)")
             let asset = AVURLAsset(url: assetURL)
             asset.resourceLoader.setDelegate(loader, queue: delegateQueue)
             let item = AVPlayerItem(asset: asset)
@@ -68,8 +67,10 @@ public final class LivePlayerModel: ObservableObject {
 /// Drop-in SwiftUI live view for one monitor. Works on iOS and tvOS.
 public struct LivePlayerView: View {
     @StateObject private var model: LivePlayerModel
+    private let rotationDegrees: Double
 
-    public init(api: ZmApiClient, coordinator: StreamCoordinator, monitorID: Int, stopBackendOnRelease: Bool = true) {
+    public init(api: ZmApiClient, coordinator: StreamCoordinator, monitorID: Int, rotationDegrees: Double = 0, stopBackendOnRelease: Bool = true) {
+        self.rotationDegrees = rotationDegrees
         _model = StateObject(wrappedValue: LivePlayerModel(
             api: api,
             coordinator: coordinator,
@@ -78,16 +79,24 @@ public struct LivePlayerView: View {
         ))
     }
 
+    private var quarterTurned: Bool { rotationDegrees.truncatingRemainder(dividingBy: 180) != 0 }
+
     public var body: some View {
-        // Color.clear + aspectRatio reliably establishes a full-width 16:9 box; the player fills it
-        // via overlay. Applying .aspectRatio directly to VideoPlayer collapses it to a thin strip.
+        // Box aspect follows the camera rotation (portrait for 90/270) so the rotated video keeps
+        // correct proportions. Color.clear sizes the box reliably; the player fills it via overlay.
         Color.clear
-            .aspectRatio(16.0 / 9.0, contentMode: .fit)
+            .aspectRatio(quarterTurned ? 9.0 / 16.0 : 16.0 / 9.0, contentMode: .fit)
             .overlay {
                 ZStack {
                     Color.black
                     if let player = model.player {
-                        VideoPlayer(player: player)
+                        GeometryReader { geo in
+                            VideoPlayer(player: player)
+                                .frame(width: quarterTurned ? geo.size.height : geo.size.width,
+                                       height: quarterTurned ? geo.size.width : geo.size.height)
+                                .rotationEffect(.degrees(rotationDegrees))
+                                .frame(width: geo.size.width, height: geo.size.height)
+                        }
                     } else if let error = model.error {
                         Text(error)
                             .font(.caption.monospaced())
