@@ -95,7 +95,7 @@ public struct LivePlayerView: View {
                                 .frame(width: quarterTurned ? geo.size.height : geo.size.width,
                                        height: quarterTurned ? geo.size.width : geo.size.height)
                                 .rotationEffect(.degrees(rotationDegrees))
-                                .frame(width: geo.size.width, height: geo.size.height)
+                                .position(x: geo.size.width / 2, y: geo.size.height / 2)
                         }
                     } else if let error = model.error {
                         Text(error)

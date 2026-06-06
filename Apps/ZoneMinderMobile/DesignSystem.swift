@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 // MARK: - Mission Control design tokens
 // A native operations-console aesthetic: dark void surfaces, cyan live affordances,
@@ -110,6 +111,54 @@ struct CardSurface<Content: View>: View {
     }
 }
 
+/// Snapshot/thumbnail view that loads via URLSession, keeps the last good frame (no flicker),
+/// retries transient backend failures, and optionally re-fetches on an interval for a live-updating
+/// wall. The ZoneMinder snapshot endpoint intermittently 404s ("keyframe capture timed out"), so a
+/// plain AsyncImage leaves tiles blank — this loop self-heals.
+struct LiveSnapshot: View {
+    let url: URL?
+    var icon: String = "video"
+    var rotation: Double = 0
+    var refresh: Double = 0   // seconds between refetches; 0 = load once (still retries failures)
+    @State private var image: UIImage?
+
+    var body: some View {
+        ZStack {
+            ZM.voidHi
+            if let image {
+                Image(uiImage: image).resizable().scaledToFill().cameraRotation(rotation)
+            } else {
+                Image(systemName: icon).foregroundStyle(ZM.faint)
+            }
+        }
+        .task(id: url) {
+            image = nil
+            guard let url else { return }
+            var attempt = 0
+            while !Task.isCancelled {
+                if let img = await Self.fetch(url) {
+                    image = img
+                    attempt = 0
+                    if refresh <= 0 { break }
+                    try? await Task.sleep(nanoseconds: UInt64(refresh * 1_000_000_000))
+                } else {
+                    // backoff retry for transient 404s, capped at 5s
+                    attempt += 1
+                    let delay = min(Double(attempt) * 1.0, 5.0)
+                    try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                }
+            }
+        }
+    }
+
+    private static func fetch(_ url: URL) async -> UIImage? {
+        guard let (data, response) = try? await URLSession.shared.data(from: url),
+              (response as? HTTPURLResponse)?.statusCode == 200,
+              let img = UIImage(data: data) else { return nil }
+        return img
+    }
+}
+
 // MARK: - Status semantics
 
 enum MonitorState {
@@ -148,7 +197,7 @@ extension View {
                     .frame(width: quarter ? geo.size.height : geo.size.width,
                            height: quarter ? geo.size.width : geo.size.height)
                     .rotationEffect(.degrees(degrees))
-                    .frame(width: geo.size.width, height: geo.size.height)
+                    .position(x: geo.size.width / 2, y: geo.size.height / 2)
             }
         }
     }

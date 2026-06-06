@@ -255,7 +255,7 @@ struct MonitorTile: View {
 
     var body: some View {
         ZStack(alignment: .bottomLeading) {
-            SnapshotImage(url: model.snapshotURL(monitor), rotation: monitor.rotationDegrees)
+            LiveSnapshot(url: model.snapshotURL(monitor), rotation: monitor.rotationDegrees, refresh: 3)
                 .mediaAspect(rotation: monitor.rotationDegrees)
                 .clipped()
             LinearGradient(colors: [.clear, ZM.void.opacity(0.9)], startPoint: .center, endPoint: .bottom)
@@ -412,7 +412,7 @@ struct EventCard: View {
     var body: some View {
         CardSurface {
             HStack(spacing: 12) {
-                SnapshotImage(url: model.thumbnailURL(event), icon: "film")
+                LiveSnapshot(url: model.thumbnailURL(event), icon: "film")
                     .frame(width: 112, height: 63)
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                 VStack(alignment: .leading, spacing: 5) {
