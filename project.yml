@@ -1,0 +1,28 @@
+name: ZoneMinderApple
+options:
+  bundleIdPrefix: com.zoneminder
+  deploymentTarget:
+    iOS: "17.0"
+    tvOS: "17.0"
+packages:
+  ZmMobileCore:
+    path: .
+targets:
+  ZoneMinderMobile:
+    type: application
+    platform: iOS
+    info:
+      path: Apps/ZoneMinderMobile/Info.plist
+    sources:
+      - Apps/ZoneMinderMobile
+    dependencies:
+      - package: ZmMobileCore
+  ZoneMinderTV:
+    type: application
+    platform: tvOS
+    info:
+      path: Apps/ZoneMinderTV/Info.plist
+    sources:
+      - Apps/ZoneMinderTV
+    dependencies:
+      - package: ZmMobileCore
