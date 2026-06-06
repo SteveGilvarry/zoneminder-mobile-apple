@@ -73,7 +73,8 @@ public actor ZmApiClient {
     }
 
     public func eventVideoURL(eventID: Int, token: String) -> URL {
-        baseURL.appending(path: "/api/v3/events/\(eventID)/video").appending(queryItems: [.init(name: "token", value: token)])
+        // Direct, Range-seekable MP4. (`/events/{id}/video` is the wrong path — use /stream/video.mp4.)
+        baseURL.appending(path: "/api/v3/events/\(eventID)/stream/video.mp4").appending(queryItems: [.init(name: "token", value: token)])
     }
 
     private func authed<T: Decodable, B: Encodable>(path: String, method: String = "GET", body: B? = Optional<EmptyBody>.none) async throws -> T {

@@ -2,10 +2,10 @@
 import SwiftUI
 import AVKit
 
-/// Plays a recorded event's video via the direct `/events/{id}/video` endpoint, which supports
-/// HTTP Range. The backend authenticates either a `?token=` query or a `Bearer` header on this
-/// endpoint, so we hand `AVPlayer` a token-query `AVURLAsset` and let it do native range requests
-/// (streaming, not buffering the whole file into memory like the HLS resource loader would).
+/// Plays a recorded event's video via the direct `/events/{id}/stream/video.mp4` endpoint, which
+/// supports HTTP Range. The backend authenticates a `?token=` query on this endpoint, so we hand
+/// `AVPlayer` a token-query `AVURLAsset` and let it do native range requests (streaming, not
+/// buffering the whole file into memory like the HLS resource loader would).
 @MainActor
 public final class EventPlayerModel: ObservableObject {
     @Published public private(set) var player: AVPlayer?
