@@ -16,10 +16,15 @@ struct ZoneMinderMobileApp: App {
 @Observable
 final class OperatorModel {
     let api = ZmApiClient()
+    let coordinator: StreamCoordinator
     var monitors: [Monitor] = []
     var events: [Event] = []
     var isAuthenticated = false
     var error: String?
+
+    init() {
+        coordinator = StreamCoordinator(api: api)
+    }
 
     func restore() {
         Task {
@@ -115,14 +120,14 @@ struct MonitorListView: View {
 }
 
 struct MonitorDetailView: View {
+    @Environment(OperatorModel.self) private var model
     let monitor: Monitor
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Rectangle()
-                .fill(.black)
-                .overlay(Text("HLS player attaches here").foregroundStyle(.secondary))
+            LivePlayerView(api: model.api, coordinator: model.coordinator, monitorID: monitor.id)
                 .aspectRatio(16/9, contentMode: .fit)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
             Text(monitor.name).font(.title2.bold())
             Text("\(monitor.capturing) / \(monitor.recording)")
                 .font(.caption.monospaced())
