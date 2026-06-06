@@ -13,6 +13,14 @@ targets:
     platform: iOS
     info:
       path: Apps/ZoneMinderMobile/Info.plist
+      properties:
+        # DEV: ZoneMinder backends are LAN-only cleartext HTTP. Declared here (not in the plist
+        # file) so `xcodegen generate` doesn't strip it. Scope to a pinned HTTPS host for prod.
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true
+        # Without a launch screen iOS runs the app letterboxed at a legacy size instead of the
+        # device's native resolution. Empty dict = blank launch screen at full native size.
+        UILaunchScreen: {}
     sources:
       - Apps/ZoneMinderMobile
     dependencies:
@@ -22,6 +30,9 @@ targets:
     platform: tvOS
     info:
       path: Apps/ZoneMinderTV/Info.plist
+      properties:
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true
     sources:
       - Apps/ZoneMinderTV
     dependencies:

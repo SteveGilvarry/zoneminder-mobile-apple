@@ -18,13 +18,12 @@
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
-	<!-- DEV ONLY: ZoneMinder backends are typically LAN-only cleartext HTTP.
-	     Allow insecure loads so the configurable http:// base URL works.
-	     Production should scope this to a pinned HTTPS host instead. -->
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
+	<key>UILaunchScreen</key>
+	<dict/>
 </dict>
 </plist>
