@@ -32,7 +32,7 @@ final class OperatorModel {
                 isAuthenticated = try await api.restore()
                 if isAuthenticated { try await refresh() }
             } catch {
-                self.error = error.localizedDescription
+                self.error = "restore: \(error)"
             }
         }
     }
@@ -44,7 +44,7 @@ final class OperatorModel {
                 isAuthenticated = true
                 try await refresh()
             } catch {
-                self.error = error.localizedDescription
+                self.error = "login: \(error)"
             }
         }
     }
@@ -91,8 +91,12 @@ struct LoginView: View {
             Text("Native operator console").foregroundStyle(.secondary)
             TextField("Username", text: $username)
                 .textFieldStyle(.roundedBorder)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
             SecureField("Password", text: $password)
                 .textFieldStyle(.roundedBorder)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
             Button("Connect") { model.login(username: username, password: password) }
                 .buttonStyle(.borderedProminent)
             if let error = model.error { Text(error).foregroundStyle(.orange) }
