@@ -154,15 +154,67 @@ struct EventListView: View {
     var body: some View {
         NavigationStack {
             List(model.events) { event in
-                VStack(alignment: .leading) {
-                    Text(event.name)
-                    Text(event.startDateTime ?? "Unknown time")
+                NavigationLink {
+                    EventDetailView(event: event)
+                } label: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(event.name)
+                        HStack(spacing: 8) {
+                            Text(event.startDateTime ?? "Unknown time")
+                            Text("· \(event.frames) frames")
+                            if let cause = event.cause, !cause.isEmpty {
+                                Text("· \(cause)")
+                            }
+                        }
                         .font(.caption.monospaced())
                         .foregroundStyle(.secondary)
+                    }
                 }
             }
             .navigationTitle("Events")
+            .toolbar {
+                Button("Refresh") { Task { try? await model.refresh() } }
+            }
         }
+    }
+}
+
+struct EventDetailView: View {
+    @Environment(OperatorModel.self) private var model
+    let event: Event
+
+    private var monitorName: String? {
+        model.monitors.first { $0.id == event.monitorId }?.name
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            EventPlayerView(api: model.api, eventID: event.id)
+                .aspectRatio(16/9, contentMode: .fit)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            Text(event.name).font(.title2.bold())
+            if let monitorName {
+                Label(monitorName, systemImage: "video")
+                    .font(.subheadline)
+                    .foregroundStyle(.cyan)
+            }
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Start: \(event.startDateTime ?? "—")")
+                Text("End: \(event.endDateTime ?? "—")")
+                Text("Frames: \(event.frames)  ·  Alarm frames: \(event.alarmFrames)")
+                if let cause = event.cause, !cause.isEmpty {
+                    Text("Cause: \(cause)")
+                }
+                if let score = event.maxScore {
+                    Text("Max score: \(score)")
+                }
+            }
+            .font(.caption.monospaced())
+            .foregroundStyle(.secondary)
+            Spacer()
+        }
+        .padding()
+        .navigationTitle("Event \(event.id)")
     }
 }
 
