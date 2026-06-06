@@ -52,7 +52,7 @@ public actor ZmApiClient {
     }
 
     public func events(pageSize: Int = 30) async throws -> [Event] {
-        let page: Paginated<Event> = try await authed(path: "/api/v3/events?page=1&page_size=\(pageSize)&sort=start_date_time&direction=desc")
+        let page: Paginated<Event> = try await authed(path: "/api/v3/events?page=1&page_size=\(pageSize)&sort=start_time&direction=desc")
         return page.items
     }
 
