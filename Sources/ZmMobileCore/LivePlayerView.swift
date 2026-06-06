@@ -1,6 +1,9 @@
 #if canImport(AVKit) && canImport(SwiftUI)
 import SwiftUI
+import OSLog
 import AVKit
+
+private let liveLog = Logger(subsystem: "com.zoneminder.mobile", category: "live")
 
 /// Owns the lifecycle of a single live HLS stream: acquires the backend session through the
 /// `StreamCoordinator`, builds an authenticated `AVPlayer`, and releases on teardown.
@@ -38,13 +41,16 @@ public final class LivePlayerModel: ObservableObject {
             let loader = AuthenticatedHLSLoader { try await api.currentAccessToken() }
             self.loader = loader
 
-            let asset = AVURLAsset(url: loader.assetURL(for: realMaster))
+            let assetURL = loader.assetURL(for: realMaster)
+            liveLog.debug("start monitor \(self.monitorID) real=\(realMaster.absoluteString, privacy: .public) asset=\(assetURL.absoluteString, privacy: .public)")
+            let asset = AVURLAsset(url: assetURL)
             asset.resourceLoader.setDelegate(loader, queue: delegateQueue)
             let item = AVPlayerItem(asset: asset)
             let player = AVPlayer(playerItem: item)
             player.play()
             self.player = player
         } catch {
+            liveLog.error("start failed monitor \(self.monitorID): \(error.localizedDescription, privacy: .public)")
             self.error = error.localizedDescription
             started = false
         }
