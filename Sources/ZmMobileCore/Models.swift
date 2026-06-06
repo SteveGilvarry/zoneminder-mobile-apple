@@ -56,11 +56,12 @@ public struct Monitor: Codable, Identifiable, Equatable, Sendable {
     public let capturing: String
     public let analysing: String
     public let recording: String
-    public let enabled: Int
+    public let enabled: Int?
     public let controllable: Int
 
     public var isCapturing: Bool { capturing != "None" }
     public var hasPTZ: Bool { controllable == 1 }
+    public var isEnabled: Bool { (enabled ?? 1) == 1 }
 }
 
 public struct Event: Codable, Identifiable, Equatable, Sendable {

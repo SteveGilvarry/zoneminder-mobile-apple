@@ -110,8 +110,18 @@ public actor ZmApiClient {
         return next.accessToken
     }
 
+    /// Builds a request URL from `baseURL` + `path`. Unlike `URL.appending(path:)`, this preserves
+    /// query strings (`?a=b&c=d`) instead of percent-encoding the `?` into `%3F`, which the backend
+    /// rejects with `500 "No matched path found"`.
+    private func resolvedURL(path: String) -> URL {
+        if let url = URL(string: path, relativeTo: baseURL)?.absoluteURL {
+            return url
+        }
+        return baseURL.appending(path: path)
+    }
+
     private func send<T: Decodable, B: Encodable>(path: String, method: String, body: B?, token: String?) async throws -> T {
-        var request = URLRequest(url: baseURL.appending(path: path))
+        var request = URLRequest(url: resolvedURL(path: path))
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         if let token {
