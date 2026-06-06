@@ -47,7 +47,7 @@ public struct TokenResponse: Decodable, Equatable, Sendable {
     }
 }
 
-public struct Monitor: Codable, Identifiable, Equatable, Sendable {
+public struct Monitor: Codable, Identifiable, Equatable, Hashable, Sendable {
     public let id: Int
     public let name: String
     public let width: Int
