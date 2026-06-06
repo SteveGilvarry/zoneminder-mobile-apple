@@ -73,22 +73,29 @@ public struct LivePlayerView: View {
     }
 
     public var body: some View {
-        ZStack {
-            Color.black
-            if let player = model.player {
-                VideoPlayer(player: player)
-            } else if let error = model.error {
-                Text(error)
-                    .font(.caption.monospaced())
-                    .foregroundStyle(.orange)
-                    .padding()
-            } else {
-                ProgressView()
-                    .tint(.cyan)
+        // Color.clear + aspectRatio reliably establishes a full-width 16:9 box; the player fills it
+        // via overlay. Applying .aspectRatio directly to VideoPlayer collapses it to a thin strip.
+        Color.clear
+            .aspectRatio(16.0 / 9.0, contentMode: .fit)
+            .overlay {
+                ZStack {
+                    Color.black
+                    if let player = model.player {
+                        VideoPlayer(player: player)
+                    } else if let error = model.error {
+                        Text(error)
+                            .font(.caption.monospaced())
+                            .foregroundStyle(.orange)
+                            .padding()
+                    } else {
+                        ProgressView()
+                            .tint(.cyan)
+                    }
+                }
             }
-        }
-        .task { await model.start() }
-        .onDisappear { Task { await model.stop() } }
+            .clipped()
+            .task { await model.start() }
+            .onDisappear { Task { await model.stop() } }
     }
 }
 #endif
