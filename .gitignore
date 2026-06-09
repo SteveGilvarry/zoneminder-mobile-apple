@@ -6,3 +6,7 @@ DerivedData/
 *.xcuserstate
 .DS_Store
 api/generated/
+
+# Local secrets — never commit. Source before running live contract tests.
+.env
+.env.local

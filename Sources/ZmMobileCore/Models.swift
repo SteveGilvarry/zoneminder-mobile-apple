@@ -80,7 +80,19 @@ public struct Event: Codable, Identifiable, Equatable, Sendable {
     public let alarmFrames: Int
     public let maxScore: Int?
     public let archived: Int
-    public let orientation: String
+    /// Orientation at record time, e.g. "Rotate90"/"Rotate0" (events are stored un-rotated, so this
+    /// drives display rotation). Optional so a missing value never breaks decoding the events list.
+    public let orientation: String?
+
+    /// Display rotation in degrees parsed from `orientation` (e.g. "Rotate90" -> 90).
+    public var rotationDegrees: Double {
+        Double((orientation ?? "").filter(\.isNumber)) ?? 0
+    }
+
+    /// Useful label: ZoneMinder names many events "New Event" — fall back to the id then.
+    public var displayName: String {
+        (name.isEmpty || name == "New Event") ? "Event \(id)" : name
+    }
 
     enum CodingKeys: String, CodingKey {
         case id, name, cause, frames, archived, orientation

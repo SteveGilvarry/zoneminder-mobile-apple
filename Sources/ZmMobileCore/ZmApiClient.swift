@@ -32,6 +32,9 @@ public actor ZmApiClient {
         let next = StoredSession(baseURL: baseURL, accessToken: response.accessToken, refreshToken: response.refreshToken)
         storedSession = next
         try tokenStore.save(next)
+        // Persist credentials so we can silently re-authenticate after the short-lived refresh
+        // token expires (the backend is stateless and keeps no server-side session).
+        try? tokenStore.saveCredentials(StoredCredentials(username: username, password: password))
     }
 
     public func logout() throws {
@@ -77,6 +80,12 @@ public actor ZmApiClient {
         baseURL.appending(path: "/api/v3/events/\(eventID)/stream/video.mp4").appending(queryItems: [.init(name: "token", value: token)])
     }
 
+    /// HLS playlist for an event. For in-progress events the backend serves an EVENT-type playlist
+    /// (the direct MP4 doesn't exist until the event finalizes), so this is the only way to play one.
+    public func eventPlaylistURL(eventID: Int) -> URL {
+        baseURL.appending(path: "/api/v3/events/\(eventID)/stream/playlist.m3u8")
+    }
+
     private func authed<T: Decodable, B: Encodable>(path: String, method: String = "GET", body: B? = Optional<EmptyBody>.none) async throws -> T {
         guard let token = try await validAccessToken() else { throw ZmApiError.unauthenticated }
         do {
@@ -91,24 +100,39 @@ public actor ZmApiClient {
         if storedSession == nil {
             storedSession = try tokenStore.load()
         }
-        guard let current = storedSession else { return nil }
+        guard let current = storedSession else { return try await reauthenticate() }
         let exp = JWT.expirationEpochSeconds(current.accessToken)
         let due = exp == nil || Date(timeIntervalSince1970: TimeInterval(exp!)).timeIntervalSinceNow < 60
         return due ? try await refreshAccessToken() : current.accessToken
     }
 
     private func refreshAccessToken() async throws -> String? {
-        guard let current = storedSession else { return nil }
-        let response: TokenResponse = try await send(
-            path: "/api/v3/auth/refresh",
-            method: "POST",
-            body: ["token": current.refreshToken],
-            token: nil
-        )
-        let next = StoredSession(baseURL: baseURL, accessToken: response.accessToken, refreshToken: response.refreshToken)
-        storedSession = next
-        try tokenStore.save(next)
-        return next.accessToken
+        guard let current = storedSession else { return try await reauthenticate() }
+        do {
+            let response: TokenResponse = try await send(
+                path: "/api/v3/auth/refresh",
+                method: "POST",
+                body: ["token": current.refreshToken],
+                token: nil
+            )
+            let next = StoredSession(baseURL: baseURL, accessToken: response.accessToken, refreshToken: response.refreshToken)
+            storedSession = next
+            try tokenStore.save(next)
+            return next.accessToken
+        } catch {
+            // Refresh token has likely expired (short-lived by design). Fall back to a silent
+            // re-login with the stored credentials before giving up.
+            if let token = try await reauthenticate() { return token }
+            throw error
+        }
+    }
+
+    /// Silent re-login using credentials persisted at last successful login. Returns nil when no
+    /// credentials are stored (then the caller surfaces the login screen).
+    private func reauthenticate() async throws -> String? {
+        guard let creds = try tokenStore.loadCredentials() else { return nil }
+        try await login(username: creds.username, password: creds.password)
+        return storedSession?.accessToken
     }
 
     /// Builds a request URL from `baseURL` + `path`. Unlike `URL.appending(path:)`, this preserves

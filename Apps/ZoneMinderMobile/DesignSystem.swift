@@ -63,6 +63,61 @@ struct StatusDot: View {
     }
 }
 
+/// Slim operator command bar that replaces the generic nav title. Carries telemetry an operator
+/// actually wants — section identity, a live-status readout, and a running clock — instead of a
+/// redundant noun label. Sits flush under the status bar to reclaim the wasted title space.
+struct CommandBar<Trailing: View>: View {
+    let section: String       // e.g. "CONSOLE" / "EVENTS"
+    var status: String? = nil // e.g. "4 LIVE" / "23 EVENTS"
+    var statusColor: Color = ZM.cyan
+    var busy: Bool = false
+    @ViewBuilder var trailing: () -> Trailing
+
+    init(section: String, status: String? = nil, statusColor: Color = ZM.cyan, busy: Bool = false,
+         @ViewBuilder trailing: @escaping () -> Trailing = { EmptyView() }) {
+        self.section = section
+        self.status = status
+        self.statusColor = statusColor
+        self.busy = busy
+        self.trailing = trailing
+    }
+
+    var body: some View {
+        HStack(spacing: 8) {
+            StatusDot(color: ZM.cyan)
+            Text("ZONEMINDER")
+                .font(.system(size: 14, weight: .heavy))
+                .tracking(1.5)
+                .foregroundStyle(ZM.text)
+                .lineLimit(1)
+                .fixedSize()
+            Text(section.uppercased())
+                .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                .tracking(1)
+                .foregroundStyle(ZM.faint)
+                .lineLimit(1)
+                .fixedSize()
+
+            Spacer(minLength: 8)
+
+            if busy {
+                ProgressView().controlSize(.mini).tint(ZM.cyan)
+            } else if let status {
+                Text(status)
+                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                    .foregroundStyle(statusColor)
+                    .lineLimit(1)
+                    .fixedSize()
+            }
+            trailing()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(ZM.voidHi)
+        .overlay(alignment: .bottom) { Rectangle().fill(ZM.hairline).frame(height: 1) }
+    }
+}
+
 /// Uppercase, letter-spaced section header — operator-console feel.
 struct SectionHeader: View {
     let title: String
