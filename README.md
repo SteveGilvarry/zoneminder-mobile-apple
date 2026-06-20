@@ -12,7 +12,7 @@
   <img alt="SwiftPM" src="https://img.shields.io/badge/SwiftPM-FA7343?style=for-the-badge&logo=swift&logoColor=white">
 </p>
 <p>
-  <a href="LICENSE"><img alt="License: AGPL-3.0" src="https://img.shields.io/badge/License-AGPL%20v3-blue.svg?style=flat-square"></a>
+  <a href="#license"><img alt="License: AGPL-3.0 or Commercial" src="https://img.shields.io/badge/License-AGPL--3.0%20%7C%20Commercial-blue?style=flat-square"></a>
   <img alt="Last commit" src="https://img.shields.io/github/last-commit/SteveGilvarry/zoneminder-mobile-apple?style=flat-square&logo=git&logoColor=white&color=F05138">
   <img alt="Top language" src="https://img.shields.io/github/languages/top/SteveGilvarry/zoneminder-mobile-apple?style=flat-square&color=F05138">
   <img alt="Code size" src="https://img.shields.io/github/languages/code-size/SteveGilvarry/zoneminder-mobile-apple?style=flat-square">
@@ -54,4 +54,7 @@ Default API base URL is `http://zoneminder.local:8080`. Development ATS exceptio
 
 ## License
 
-Licensed under the **GNU Affero General Public License v3.0 or later** (AGPL-3.0-or-later), matching `zm_api` / ZoneMinder. See [LICENSE](LICENSE).
+**Dual-licensed**, matching [`zm_api`](https://github.com/SteveGilvarry/zm-api):
+
+- 🆓 **Open source — [AGPL-3.0](LICENSE).** Free to use, modify, and self-host. If you run a modified version as a network service, the AGPL requires you to publish your changes.
+- 💼 **Commercial.** For embedding this client in a closed-source product, or shipping a modified version without the AGPL's source-sharing obligation, a commercial license is available. Contact the maintainer to enquire.
